@@ -4,12 +4,15 @@ import {
   CoinsIcon,
   HomeIcon,
   Layers2Icon,
+  MenuIcon,
   ShieldCheckIcon,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import Link from 'next/link';
-import { buttonVariants } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
 import { usePathname } from 'next/navigation';
+import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { useState } from 'react';
 
 const routes = [
   {
@@ -63,6 +66,52 @@ export const DesktopSidebar = () => {
           </Link>
         ))}
       </div>
+    </div>
+  );
+};
+
+export const MobileSidebar = () => {
+  const [isOpen, setOpen] = useState(false);
+
+  const pathname = usePathname();
+  const activeRoute =
+    routes.find(
+      (route) => route.href.length > 0 && pathname.includes(route.href),
+    ) || routes[0];
+
+  return (
+    <div className="block border-separate bg-background md:hidden">
+      <nav className="container flex items-center justify-between px-8">
+        <Sheet open={isOpen} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MenuIcon />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            className="w-[400px] sm:w-[540px] space-y-4"
+            side="left">
+            <Logo />
+            <div className="flex flex-col gap-1">
+              {routes.map((route) => (
+                <Link
+                  key={route.href}
+                  href={route.href}
+                  className={buttonVariants({
+                    variant:
+                      activeRoute.href === route.href
+                        ? 'sidebarItemActive'
+                        : 'sidebarItem',
+                  })}
+                  onClick={() => setOpen((prevOpen) => !prevOpen)}>
+                  <route.icon size={20} />
+                  {route.label}
+                </Link>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </nav>
     </div>
   );
 };
