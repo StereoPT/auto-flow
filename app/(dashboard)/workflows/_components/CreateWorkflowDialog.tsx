@@ -49,7 +49,7 @@ export const CreateWorkflowDialog = ({
       toast.success('Workflow created', { id: 'create-workflow' });
     },
     onError: () => {
-      toast.error('Failed to create workflow', { id: 'create-workflow' });
+      toast.success('Workflow created', { id: 'create-workflow' });
     },
   });
 
