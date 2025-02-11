@@ -14,12 +14,13 @@ export const NodeInputs = ({ children }: NodeInputsProps) => {
 
 type NodeInputProps = {
   input: TaskParam;
+  nodeId: string;
 };
 
-export const NodeInput = ({ input }: NodeInputProps) => {
+export const NodeInput = ({ input, nodeId }: NodeInputProps) => {
   return (
     <div className="flex justify-start relative p-3 bg-secondary w-full">
-      <NodeParamField param={input} />
+      <NodeParamField param={input} nodeId={nodeId} />
       {!input.hideHandle && (
         <Handle
           id={input.name}
