@@ -40,11 +40,6 @@ export const FlowEditor = ({ workflow }: FlowEditorProps) => {
 
       setNodes(flow.nodes || []);
       setEdges(flow.edges || []);
-
-      // if (!flow.viewport) return;
-
-      // const { x = 0, y = 0, zoom = 1 } = flow.viewport;
-      // setViewport({ x, y, zoom });
     } catch (error) {
       console.error(error);
     }
@@ -55,19 +50,22 @@ export const FlowEditor = ({ workflow }: FlowEditorProps) => {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  const onDrop = useCallback((event: DragEvent) => {
-    event.preventDefault();
-    const taskType = event.dataTransfer.getData('application/reactflow');
-    if (typeof taskType === undefined || !taskType) return;
+  const onDrop = useCallback(
+    (event: DragEvent) => {
+      event.preventDefault();
+      const taskType = event.dataTransfer.getData('application/reactflow');
+      if (typeof taskType === undefined || !taskType) return;
 
-    const position = screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
-    const newNode = CreateFlowNode(taskType as TaskType, position);
-    setNodes((nds) => nds.concat(newNode));
-  }, []);
+      const newNode = CreateFlowNode(taskType as TaskType, position);
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [screenToFlowPosition, setNodes],
+  );
 
   return (
     <main className="h-full w-full">
