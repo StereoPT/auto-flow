@@ -9,6 +9,10 @@ import { ExecutionPhase } from '@prisma/client';
 import { AppNode } from '@/types/appNode';
 import { TaskRegistry } from './task/registry';
 import { ExecutorRegistry } from './executor/registry';
+import { Environment, ExecutionEnvironment } from '@/types/executor';
+import { TaskParamType } from '@/types/task';
+import { Browser, Page } from 'puppeteer';
+import { Edge } from '@xyflow/react';
 
 export const ExecuteWorkflow = async (executionId: string) => {
   const execution = await prisma.workflowExecution.findUnique({
@@ -23,7 +27,9 @@ export const ExecuteWorkflow = async (executionId: string) => {
     throw new Error('Execution Not Found!');
   }
 
-  const environment = {
+  const edges = JSON.parse(execution.definition).edges as Edge[];
+
+  const environment: Environment = {
     phases: {},
   };
 
@@ -34,7 +40,11 @@ export const ExecuteWorkflow = async (executionId: string) => {
   let executionFailed = false;
   for (const phase of execution.phases) {
     // TODO: Consume Credits
-    const phaseExecution = await executeWorkflowPhase(phase);
+    const phaseExecution = await executeWorkflowPhase(
+      phase,
+      environment,
+      edges,
+    );
     if (!phaseExecution.success) {
       executionFailed = true;
       break;
@@ -47,7 +57,8 @@ export const ExecuteWorkflow = async (executionId: string) => {
     executionFailed,
     creditsConsumed,
   );
-  // TODO: Clean Environment
+
+  await cleanupEnvironment(environment);
 
   revalidatePath('/workflow/runs');
 };
@@ -118,15 +129,22 @@ const finalizeWorkflowExecution = async (
     });
 };
 
-const executeWorkflowPhase = async (phase: ExecutionPhase) => {
+const executeWorkflowPhase = async (
+  phase: ExecutionPhase,
+  environment: Environment,
+  edges: Edge[],
+) => {
   const startedAt = new Date();
   const node = JSON.parse(phase.node) as AppNode;
+
+  setupEnvironmentForPhase(node, environment, edges);
 
   await prisma.executionPhase.update({
     where: { id: phase.id },
     data: {
       status: ExecutionPhaseStatus.RUNNING,
       startedAt,
+      inputs: JSON.stringify(environment.phases[node.id].inputs),
     },
   });
 
@@ -137,14 +155,18 @@ const executeWorkflowPhase = async (phase: ExecutionPhase) => {
 
   // TODO: Decrement User Balance
 
-  // Execute Phase Simulation
-  const success = await executePhase(phase, node);
+  const success = await executePhase(phase, node, environment);
 
-  await finalizePhase(phase.id, success);
+  const outputs = environment.phases[node.id].outputs;
+  await finalizePhase(phase.id, success, outputs);
   return { success };
 };
 
-const finalizePhase = async (phaseId: string, success: boolean) => {
+const finalizePhase = async (
+  phaseId: string,
+  success: boolean,
+  outputs: any,
+) => {
   const finalStatus = success
     ? ExecutionPhaseStatus.COMPLETED
     : ExecutionPhaseStatus.FAILED;
@@ -154,6 +176,7 @@ const finalizePhase = async (phaseId: string, success: boolean) => {
     data: {
       status: finalStatus,
       completedAt: new Date(),
+      outputs: JSON.stringify(outputs),
     },
   });
 };
@@ -161,9 +184,75 @@ const finalizePhase = async (phaseId: string, success: boolean) => {
 const executePhase = async (
   phase: ExecutionPhase,
   node: AppNode,
+  environment: Environment,
 ): Promise<boolean> => {
   const runFn = ExecutorRegistry[node.data.type];
   if (!runFn) return false;
 
-  return await runFn();
+  const executionEnvironment: ExecutionEnvironment<any> =
+    createExecutionEnvironment(node, environment);
+  return await runFn(executionEnvironment);
+};
+
+const setupEnvironmentForPhase = (
+  node: AppNode,
+  environment: Environment,
+  edges: Edge[],
+) => {
+  environment.phases[node.id] = { inputs: {}, outputs: {} };
+
+  const inputs = TaskRegistry[node.data.type].inputs;
+  for (const input of inputs) {
+    if (input.type === TaskParamType.BROWSER_INSTANCE) continue;
+
+    const inputValue = node.data.inputs[input.name];
+    if (inputValue) {
+      environment.phases[node.id].inputs[input.name] = inputValue;
+      continue;
+    }
+
+    const connectedEdge = edges.find(
+      (edge) => edge.target === node.id && edge.targetHandle === input.name,
+    );
+
+    if (!connectedEdge) {
+      console.error('Missing Edge for Input', input.name, 'Node ID:', node.id);
+      continue;
+    }
+
+    const outputValue =
+      environment.phases[connectedEdge.source].outputs[
+        connectedEdge.sourceHandle!
+      ];
+
+    environment.phases[node.id].inputs[input.name] = outputValue;
+  }
+};
+
+const createExecutionEnvironment = (
+  node: AppNode,
+  environment: Environment,
+): ExecutionEnvironment<any> => {
+  return {
+    getInput: (name: string) => environment.phases[node.id]?.inputs[name],
+    setOutput: (name: string, value: string) => {
+      environment.phases[node.id].outputs[name] = value;
+    },
+
+    // Browser
+    getBrowser: () => environment.browser,
+    setBrowser: (browser: Browser) => (environment.browser = browser),
+
+    //Page
+    getPage: () => environment.page,
+    setPage: (page: Page) => (environment.page = page),
+  };
+};
+
+const cleanupEnvironment = async (environment: Environment) => {
+  if (environment.browser) {
+    await environment.browser
+      .close()
+      .catch((err) => console.error('Unable to Close Browser', err));
+  }
 };

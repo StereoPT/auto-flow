@@ -1,4 +1,27 @@
-export const LaunchBrowserExecutor = async (): Promise<boolean> => {
-  console.log('Running Launch Browser Executor');
-  return true;
+import { ExecutionEnvironment } from '@/types/executor';
+import puppeteer from 'puppeteer';
+import { LaunchBrowserTask } from '../task/LaunchBrowser';
+
+export const LaunchBrowserExecutor = async (
+  environment: ExecutionEnvironment<typeof LaunchBrowserTask>,
+): Promise<boolean> => {
+  try {
+    const websiteUrl = environment.getInput('Website Url');
+
+    const browser = await puppeteer.launch({
+      headless: true,
+    });
+
+    environment.setBrowser(browser);
+
+    const page = await browser.newPage();
+    await page.goto(websiteUrl);
+
+    environment.setPage(page);
+
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
 };
