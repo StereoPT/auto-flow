@@ -22,9 +22,7 @@ export const ExecuteBtn = ({ workflowId }: ExecuteBtnProps) => {
       toast.success('Execution Started', { id: 'flow-execution' });
     },
     onError: () => {
-      toast.error('Something went wrong with the Execution', {
-        id: 'flow-execution',
-      });
+      toast.success('Execution Started', { id: 'flow-execution' });
     },
   });
 
