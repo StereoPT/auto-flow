@@ -7,12 +7,15 @@ import { useRouter } from 'next/navigation';
 import { SaveBtn } from './SaveBtn';
 import { ExecuteBtn } from './ExecuteBtn';
 import { NavigationTabs } from './NavigationTabs';
+import { PublishBtn } from './PublishBtn';
+import { UnpublishBtn } from './UnpublishBtn';
 
 type TopbarProps = {
   title: string;
   subtitle?: string;
   workflowId: string;
   hideButtons?: boolean;
+  isPublished?: boolean;
 };
 
 export const Topbar = ({
@@ -20,6 +23,7 @@ export const Topbar = ({
   subtitle,
   workflowId,
   hideButtons = false,
+  isPublished = false,
 }: TopbarProps) => {
   const router = useRouter();
 
@@ -45,7 +49,13 @@ export const Topbar = ({
         {!hideButtons && (
           <>
             <ExecuteBtn workflowId={workflowId} />
-            <SaveBtn workflowId={workflowId} />
+            {isPublished && <UnpublishBtn workflowId={workflowId} />}
+            {!isPublished && (
+              <>
+                <SaveBtn workflowId={workflowId} />
+                <PublishBtn workflowId={workflowId} />
+              </>
+            )}
           </>
         )}
       </div>
