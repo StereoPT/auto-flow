@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { PhaseStatusBadge } from './PhaseStatusBadge';
+import { ReactCountUpWrapper } from '@/components/ReactCountUpWrapper';
 
 type ExecutionLabelProps = {
   icon: LucideIcon;
@@ -259,7 +260,7 @@ export const ExecutionViewer = ({ initialData }: ExecutionViewerProps) => {
           <ExecutionLabel
             icon={CoinsIcon}
             label="Credits Consumed"
-            value={creditsConsumed}
+            value={<ReactCountUpWrapper value={creditsConsumed} />}
           />
 
           <Separator />
@@ -319,7 +320,7 @@ export const ExecutionViewer = ({ initialData }: ExecutionViewerProps) => {
                   <CoinsIcon size={18} className="stroke-muted-foreground" />
                   <span>Credits</span>
                 </div>
-                <span>TODO</span>
+                <span>{phaseDetails.data.creditsConsumed}</span>
               </Badge>
               <Badge variant="outline" className="space-x-4">
                 <div className="flex gap-1 items-center">
