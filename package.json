@@ -55,6 +55,7 @@
     "next": "15.1.6",
     "next-themes": "^0.4.4",
     "nextjs-toploader": "^3.7.15",
+    "openai": "^4.85.1",
     "puppeteer": "^24.2.0",
     "react": "^18.3.1",
     "react-countup": "^6.5.3",
