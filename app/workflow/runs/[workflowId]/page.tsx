@@ -48,11 +48,13 @@ type ExecutionsPageParams = {
   };
 };
 
-const ExecutionsPage = ({ params }: ExecutionsPageParams) => {
+const ExecutionsPage = async ({ params }: ExecutionsPageParams) => {
+  const { workflowId } = await params;
+
   return (
     <div className="h-full w-full overflow-auto">
       <Topbar
-        workflowId={params.workflowId}
+        workflowId={workflowId}
         hideButtons
         title="All Runs"
         subtitle="List of All Your Workflow Runs"
@@ -63,7 +65,7 @@ const ExecutionsPage = ({ params }: ExecutionsPageParams) => {
             <Loader2Icon size={30} className="animate-spin stroke-primary" />
           </div>
         }>
-        <ExecutionsTableWrapper workflowId={params.workflowId} />
+        <ExecutionsTableWrapper workflowId={workflowId} />
       </Suspense>
     </div>
   );
